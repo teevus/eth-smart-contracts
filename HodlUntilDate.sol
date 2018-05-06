@@ -71,6 +71,7 @@ contract HodlUntilDate {
     // Allows moving the hodl date back (but not forwards), even if its already in the past
     function extendHodlDate(uint256 _hodlDate) public {
         require(_hodlDate > hodlDate, "The new HODL date must be after the current HODL date");
+        require(_hodlDate < (block.timestamp + 10 years),"hodlDate cannot be more than 10 years in the future");
 
         hodlDate = _hodlDate; 
     }
