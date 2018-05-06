@@ -68,6 +68,13 @@ contract HodlUntilDate {
         }
     }
 
+    // Allows moving the hodl date back (but not forwards), even if its already in the past
+    function extendHodlDate(uint256 _hodlDate) public {
+        require(_hodlDate > hodlDate, "The new HODL date must be after the current HODL date");
+
+        hodlDate = _hodlDate; 
+    }
+
     // Fallback function for receiving payments
     function() public payable {
         // Don't need to do anything
