@@ -26,8 +26,8 @@ contract HodlUntilDate {
     
         // https://ethereum.stackexchange.com/questions/18192/how-do-you-work-with-date-and-time-on-ethereum-platform
         // The block includes a timestamp (in seconds since 1970), which your contract code can refer to by the name now
-        require(_hodlDate > block.timestamp,'hodlDate must be later than the current block timestamp');
-        require(_hodlDate < (block.timestamp + 10 years),'hodlDate cannot be more than 10 years in the future');
+        require(_hodlDate > block.timestamp,"hodlDate must be later than the current block timestamp");
+        require(_hodlDate < (block.timestamp + 10 years),"hodlDate cannot be more than 10 years in the future");
         
         hodlDate = _hodlDate;
         owner = msg.sender;
@@ -38,6 +38,8 @@ contract HodlUntilDate {
         onlyBy(owner)
         onlyAfterHodlDate()
         onlyIfHasAvailableBalance() {
+
+        require(amount > 0, "Amount to withdraw must be greater than zero");
 
         // TODO: We are calculating the available balance twice... 
         //       need to measure gas, and refactor to see what the difference is
@@ -64,6 +66,11 @@ contract HodlUntilDate {
         else {
             return address(this).balance;
         }
+    }
+
+    // Fallback function for receiving payments
+    function() public payable {
+        // Don't need to do anything
     }
 }
 
