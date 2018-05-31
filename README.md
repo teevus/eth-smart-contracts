@@ -14,7 +14,7 @@ A selection of Ethereum smart contracts that I have developed while learning Sol
 Smart Contract which allows locking any funds received by the address for a specified period of time.  Note: this relies on the block timestamp so is vulnerable to manipulation from miners, however the risk is small as the miner would have to put the timestamp in the past, and risk having their blocks rejected by the network. 
 
 ### HodlUntilDateUnlessReleased
-Similar to HodlUntilDate contract (inherits from it), but gives a secondary private key the ability to release all or part of the balance immediately. 
+Similar to HodlUntilDate contract (inherits from it), but gives a secondary address the ability to release all or part of the balance immediately. 
 
 ### OddOrEvenContestContract
 A simple mechanism for determining the winner between 2 addresses.  One address is the "even" address, the other is the "odd" address.<br>
