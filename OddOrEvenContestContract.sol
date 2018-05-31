@@ -21,6 +21,7 @@ contract OddOrEvenGameContract {
     }
 
     struct Contest {
+        bytes32 id;
         
         address oddPlayer;  // Player that wins if the total is odd
         address evenPlayer; // Player that win if the total is even
@@ -31,50 +32,71 @@ contract OddOrEvenGameContract {
         uint128 oddPlayerNumber;
         uint128 evenPlayerNumber;
         
-        address winner;
-        
         ContestStage stage;
     }
+    
+    modifier onlyIfIdValid(bytes32 id) {
+        require(id.length > 0, "id is required");
+        _;
+    }
+    modifier onlyIfIdExists(bytes32 id) {
+        require(contests[id].id.length > 0, 'Contest does not exist for the specified id');
+        _;
+    }
+    modifier onlyIfIdDoesNotExist(bytes32 id) {
+        require(contests[id].id.length == 0, "id must be unique (Contest already exists with this id");
+        _;
+    }
+    modifier onlyByEitherPlayer(bytes32 id) {
+        Contest storage contest = contests[id];
+        require(msg.sender == contest.oddPlayer || msg.sender == contest.evenPlayer, "Function can only be called by either of the players related to the contest.");
+        _;
+    }
 
-    uint nextId;
-
-
-    mapping (uint => Contest) public contests;
-    mapping (uint => uint) public results;
+    mapping (bytes32 => Contest) public contests;
+    mapping (bytes32 => address) public results;
 
     constructor() public {
         // Nothing to do
     }
     
-    function startContest(address oddPlayer, address evenPlayer) public returns (uint) {
-        nextId = nextId + 1;
+    function startContest(bytes32 id, address oddPlayer, address evenPlayer) public 
+                onlyIfIdValid(id)
+                onlyIfIdDoesNotExist(id) {
+
+        require(oddPlayer != 0, "Odd Player address cannot be zero");
+        require(evenPlayer != 0, "Even Player address cannot be zero");
+        require(oddPlayer != evenPlayer, "Odd Player and Even Player addresses must be different");
         
         Contest memory newContest = Contest({
+            id: id,
             oddPlayer: oddPlayer,
             evenPlayer: evenPlayer,
             stage: ContestStage.Commit,
             oddPlayerNumberHash: "",
             evenPlayerNumberHash: "",
             oddPlayerNumber: 0,
-            evenPlayerNumber: 0,
-            winner: 0 // Empty address
+            evenPlayerNumber: 0
         });
         
-        contests[nextId] = newContest;
-        
-        return nextId;
+        contests[id] = newContest;
     }
     
     // Each player should call this, to publish the hashed version of their value
-    function commit(uint id, bytes32 numberHash) public {
+    function commit(bytes32 id, bytes32 numberHash) public 
+            onlyIfIdValid(id)
+            onlyIfIdExists(id)
+            onlyByEitherPlayer(id) {
+        
         Contest storage contest = contests[id];
         require(contest.stage == ContestStage.Commit, "Contest must be at the Commit stage");
          
+        
         // Note: it doesnt matter if they have already provided a value, as long as both players havent yet, we just overwrite
         if (msg.sender == contest.oddPlayer) {
             contest.oddPlayerNumberHash = numberHash;
         }
-        else {
+        else if (msg.sender == contest.evenPlayer) {
             contest.evenPlayerNumberHash = numberHash;
         }
         
@@ -84,7 +106,10 @@ contract OddOrEvenGameContract {
     }
     
     // Each player should call this, to reveal their actual value
-    function reveal(uint id, uint128 actualValue, bytes32 salt) public {
+    function reveal(bytes32 id, uint128 actualValue, bytes32 salt) public 
+                onlyIfIdValid(id)
+                onlyIfIdExists(id)
+                onlyByEitherPlayer(id) {
         
         Contest storage contest = contests[id];
         
@@ -101,21 +126,28 @@ contract OddOrEvenGameContract {
         
         // If both players have revealed then calculate the result
         if (contest.oddPlayerNumber > 0 && contest.evenPlayerNumber > 0) {
-            uint sum = contest.oddPlayerNumber + contest.evenPlayerNumber; // TODO: What if this is bigger than maximum uint256
-            results[id] = sum;
+            uint sum = contest.oddPlayerNumber + contest.evenPlayerNumber;
+            if (sum % 2 == 1) {
+                // Odd player wins
+                results[id] = contest.oddPlayer;
+            }
+            else {
+                // Even player wins
+                results[id] = contest.evenPlayer;
+            }
+
             contest.stage = ContestStage.Result;
         }
     }
     
-    function verifyHash(bytes32 hash, uint128 actualValue, bytes32 salt) private returns (uint128) {
+    function verifyHash(bytes32 hash, uint128 actualValue, bytes32 salt) private pure returns (uint128) {
         bytes32 calculatedHash = keccak256(actualValue, salt);
         
         require(hash == calculatedHash, "Hash value of actualValue doesnt match hash value provided during Commit stage.");
         
         return actualValue;
     }
+
     
-    
-    
-    
+
 }
